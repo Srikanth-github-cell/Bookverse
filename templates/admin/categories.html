@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Categories - BookVerse Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="admin-navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('admin_dashboard') }}" class="logo">
+                <span class="logo-icon">🛡️</span>
+                <span class="logo-text">Admin Panel</span>
+            </a>
+            
+            <div class="nav-links">
+                <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('admin_books') }}">Books</a>
+                <a href="{{ url_for('admin_users') }}">Users</a>
+                <a href="{{ url_for('admin_categories') }}">Categories</a>
+                <a href="{{ url_for('admin_reviews') }}">Reviews</a>
+                <a href="{{ url_for('admin_logout') }}" class="btn-logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <main class="admin-content">
+        <div class="admin-header">
+            <h1 class="admin-title">Manage Categories</h1>
+            <button onclick="openAddModal()" class="btn-primary">Add New Category</button>
+        </div>
+
+        <div class="admin-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in categories %}
+                    <tr>
+                        <td>{{ category.id }}</td>
+                        <td>{{ category.name }}</td>
+                        <td>{{ category.description }}</td>
+                        <td>
+                            <button onclick="openEditModal({{ category.id }}, '{{ category.name }}', '{{ category.description or '' }}')" class="btn-edit">Edit</button>
+                            <a href="{{ url_for('admin_delete_category', category_id=category.id) }}" onclick="return confirm('Delete this category?')" class="btn-delete">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddModal()">&times;</span>
+            <h2>Add New Category</h2>
+            <form method="POST" action="{{ url_for('admin_add_category') }}" class="admin-form">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" name="name" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" class="form-input" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-submit">Add Category</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Category</h2>
+            <form method="POST" id="editForm" class="admin-form">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" name="name" id="editName" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" id="editDescription" class="form-input" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-submit">Update Category</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'block';
+        }
+        
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+        
+        function openEditModal(id, name, description) {
+            document.getElementById('editName').value = name;
+            document.getElementById('editDescription').value = description;
+            document.getElementById('editForm').action = '/admin/categories/edit/' + id;
+            document.getElementById('editModal').style.display = 'block';
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+        
+        window.onclick = function(event) {
+            const addModal = document.getElementById('addModal');
+            const editModal = document.getElementById('editModal');
+            if (event.target == addModal) {
+                closeAddModal();
+            }
+            if (event.target == editModal) {
+                closeEditModal();
+            }
+        }
+    </script>
+</body>
+</html>

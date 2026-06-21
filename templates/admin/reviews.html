@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Reviews - BookVerse Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="admin-navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('admin_dashboard') }}" class="logo">
+                <span class="logo-icon">🛡️</span>
+                <span class="logo-text">Admin Panel</span>
+            </a>
+            
+            <div class="nav-links">
+                <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('admin_books') }}">Books</a>
+                <a href="{{ url_for('admin_users') }}">Users</a>
+                <a href="{{ url_for('admin_categories') }}">Categories</a>
+                <a href="{{ url_for('admin_reviews') }}">Reviews</a>
+                <a href="{{ url_for('admin_logout') }}" class="btn-logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <main class="admin-content">
+        <h1 class="admin-title">Manage Reviews & Ratings</h1>
+
+        <div class="admin-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Book</th>
+                        <th>Rating</th>
+                        <th>Review</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for review in reviews %}
+                    <tr>
+                        <td>{{ review.username }}</td>
+                        <td>{{ review.book_title }}</td>
+                        <td>{{ '★' * review.rating }}{{ '☆' * (5 - review.rating) }}</td>
+                        <td>{{ review.review[:50] }}{% if review.review and review.review|length > 50 %}...{% endif %}</td>
+                        <td>{{ review.created_at }}</td>
+                        <td>
+                            {% if review.approved %}
+                            <span class="status-approved">Approved</span>
+                            {% else %}
+                            <span class="status-pending">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not review.approved %}
+                            <a href="{{ url_for('admin_approve_review', review_id=review.id) }}" class="btn-approve">Approve</a>
+                            {% endif %}
+                            <a href="{{ url_for('admin_delete_review', review_id=review.id) }}" onclick="return confirm('Delete this review?')" class="btn-delete">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>

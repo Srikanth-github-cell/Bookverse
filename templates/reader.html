@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ book.title }} - BookVerse Reader</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0a0e27, #1a1e3f);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .reader-header {
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.98), rgba(26, 30, 63, 0.98));
+            border-bottom: 3px solid #00ffff;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.15);
+            flex: 0 0 auto;
+        }
+        
+        .reader-title {
+            color: #00ffff;
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .reader-controls {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+.reader-controls button, .reader-controls a {
+            background: linear-gradient(135deg, #00ffff, #00cccc);
+            color: #0a0e27;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .reader-controls button:hover, .reader-controls a:hover {
+            background: linear-gradient(135deg, #00cccc, #009999);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.4);
+        }
+
+        .reader-controls button:active, .reader-controls a:active {
+            transform: translateY(-1px);
+        }
+        
+        .page-info {
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        
+#pdf-viewer {
+            flex: 1 1 auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* top align to avoid middle cropping */
+            overflow: auto;
+            padding: 1rem;
+            background: radial-gradient(ellipse at center, rgba(0, 255, 255, 0.05), transparent);
+        }
+
+        #pdf-canvas {
+            max-width: 100%;
+            height: auto;
+            display: block; /* avoid baseline whitespace */
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            background: #ffffff;
+            border-radius: 8px;
+        }
+        
+        .loading {
+            color: #00ffff;
+            font-size: 1.8rem;
+            text-align: center;
+            font-weight: 500;
+            text-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Scrollbar styling */
+        #pdf-viewer::-webkit-scrollbar { width: 12px; height: 12px; }
+        #pdf-viewer::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 6px; }
+        #pdf-viewer::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #00ffff, #00cccc); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+        #pdf-viewer::-webkit-scrollbar-thumb:hover { background: linear-gradient(135deg, #00cccc, #009999); }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .reader-header {
+                padding: 0.8rem 1rem;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+            
+            .reader-title {
+                font-size: 1.1rem;
+                max-width: 200px;
+            }
+            
+            .reader-controls {
+                gap: 0.5rem;
+            }
+            
+            .reader-controls button {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.8rem;
+            }
+            
+            .page-info {
+                font-size: 0.9rem;
+                padding: 0.4rem 0.8rem;
+            }
+            
+            #pdf-viewer {
+                padding: 1rem;
+            }
+            
+            #pdf-canvas {
+                max-width: 98%;
+                max-height: 98%;
+            }
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+    <div class="reader-header">
+        <h1 class="reader-title">{{ book.title }}</h1>
+            <div class="reader-controls">
+            <button onclick="previousPage()" id="prevBtn" disabled>← Previous</button>
+            <span class="page-info" id="pageInfo">Page <span id="pageNum">1</span> of <span id="pageCount">-</span></span>
+            <button onclick="nextPage()" id="nextBtn" disabled>Next →</button>
+            <button onclick="toggleFitMode()" id="fitBtn" title="Toggle fit">Fit Page</button>
+            <a href="{{ url_for('book_detail', book_id=book.id) }}">✕ Close</a>
+        </div>
+    </div>
+    
+    <div id="pdf-viewer">
+        <div class="loading">Loading PDF...</div>
+    </div>
+
+    <script>
+        const pdfEndpoint = "/api/book_pdf/{{ book.id }}";
+        let pdfDoc = null;
+        let pageNum = {{ last_page }};
+        let pageRendering = false;
+        let pageNumPending = null;
+        let fitMode = 'page'; // 'width', 'height', 'page'
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        function calculateScale(page) {
+            const viewport = page.getViewport({ scale: 1.0 });
+            const viewer = document.getElementById('pdf-viewer');
+            const styles = window.getComputedStyle(viewer);
+            const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+            const padY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+            const availableWidth = viewer.clientWidth - padX - 2;   // subtract a couple px to avoid scrollbars
+            const availableHeight = viewer.clientHeight - padY - 2;
+            const scaleWidth = availableWidth / viewport.width;
+            const scaleHeight = availableHeight / viewport.height;
+            if (fitMode === 'width') return Math.min(scaleWidth, 2.0);
+            if (fitMode === 'height') return Math.min(scaleHeight, 2.0);
+            return Math.min(scaleWidth, scaleHeight, 2.0);
+        }
+
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(function(page) {
+                const scale = calculateScale(page);
+                const viewport = page.getViewport({ scale: scale });
+                const canvas = document.getElementById('pdf-canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                const renderContext = { canvasContext: ctx, viewport: viewport };
+                const renderTask = page.render(renderContext);
+                renderTask.promise.then(function() {
+                    pageRendering = false;
+                    if (pageNumPending !== null) { renderPage(pageNumPending); pageNumPending = null; }
+                    // ensure top-left is visible, especially in Fit Page mode
+                    const viewer = document.getElementById('pdf-viewer');
+                    viewer.scrollTop = 0;
+                    viewer.scrollLeft = 0;
+                    saveProgress();
+                });
+            });
+            document.getElementById('pageNum').textContent = num;
+        }
+
+        function queueRenderPage(num) { if (pageRendering) pageNumPending = num; else renderPage(num); }
+        function previousPage() { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); }
+        function nextPage() { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); }
+
+        async function saveProgress() {
+            {% if current_user.is_authenticated %}
+            try {
+                await fetch('/api/save_progress', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ book_id: {{ book.id }}, page: pageNum })
+                });
+            } catch (_) {}
+            {% endif %}
+        }
+
+        async function loadPdf() {
+            try {
+                const resp = await fetch(pdfEndpoint, { cache: 'no-store' });
+                if (!resp.ok) throw new Error('Failed to load PDF');
+                const bytes = await resp.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({ data: bytes });
+                pdfDoc = await loadingTask.promise;
+                document.getElementById('pageCount').textContent = pdfDoc.numPages;
+                const viewer = document.getElementById('pdf-viewer');
+                viewer.innerHTML = '<canvas id="pdf-canvas"></canvas>';
+                renderPage(pageNum);
+                document.getElementById('prevBtn').disabled = false;
+                document.getElementById('nextBtn').disabled = false;
+            } catch (error) {
+                document.getElementById('pdf-viewer').innerHTML = '<div class="loading">Error loading PDF</div>';
+            }
+        }
+
+        function toggleFitMode() {
+            const modes = ['page', 'width', 'height'];
+            const labels = ['Fit Page', 'Fit Width', 'Fit Height'];
+            const currentIndex = modes.indexOf(fitMode);
+            fitMode = modes[(currentIndex + 1) % modes.length];
+            document.getElementById('fitBtn').textContent = labels[(currentIndex + 1) % modes.length];
+            queueRenderPage(pageNum);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') previousPage();
+            if (e.key === 'ArrowRight') nextPage();
+            if (e.key === 'f') toggleFitMode();
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'u')) { e.preventDefault(); }
+        });
+        window.addEventListener('resize', function() { if (pdfDoc && !pageRendering) queueRenderPage(pageNum); });
+
+        loadPdf();
+    </script>
+</body>
+</html>

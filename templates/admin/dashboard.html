@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - BookVerse</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="admin-navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('admin_dashboard') }}" class="logo">
+                <span class="logo-icon">🛡️</span>
+                <span class="logo-text">Admin Panel</span>
+            </a>
+            
+            <div class="nav-links">
+                <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('admin_books') }}">Books</a>
+                <a href="{{ url_for('admin_users') }}">Users</a>
+                <a href="{{ url_for('admin_categories') }}">Categories</a>
+                <a href="{{ url_for('admin_reviews') }}">Reviews</a>
+                <a href="{{ url_for('admin_logout') }}" class="btn-logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <main class="admin-content">
+        <h1 class="admin-title">Dashboard Analytics</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-info">
+                    <h3>Total Users</h3>
+                    <p class="stat-number">{{ total_users }}</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-info">
+                    <h3>Total Books</h3>
+                    <p class="stat-number">{{ total_books }}</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-info">
+                    <h3>Pending Reviews</h3>
+                    <p class="stat-number">{{ pending_reviews }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="analytics-grid">
+            <div class="analytics-card">
+                <h2>Most Read Books</h2>
+                <div class="analytics-list">
+                    {% for book in most_read_books %}
+                    <div class="analytics-item">
+                        <span>{{ book.title }}</span>
+                        <span class="analytics-value">{{ book.read_count }} reads</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="analytics-card">
+                <h2>Popular Categories</h2>
+                <div class="analytics-list">
+                    {% for category in popular_categories %}
+                    <div class="analytics-item">
+                        <span>{{ category.name }}</span>
+                        <span class="analytics-value">{{ category.book_count }} books</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

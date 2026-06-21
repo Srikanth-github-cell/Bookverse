@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Register - BookVerse{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h2 class="auth-title">Join <span class="neon-text">BookVerse</span></h2>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="role">Register as</label>
+            <select id="role" class="form-input" style="cursor: pointer;">
+                <option value="user" selected>User (Reader)</option>
+                <!-- <option value="admin">Admin</option> -->
+            </select>
+        </div>
+        
+        <form id="registerForm" method="POST" class="auth-form" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required class="form-input">
+            </div>
+            
+            <div class="form-group" id="emailGroup">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required class="form-input">
+            </div>
+            
+            <button type="submit" class="btn-submit">Register</button>
+        </form>
+        
+        <p class="auth-switch">Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const roleEl = document.getElementById('role');
+  const form = document.getElementById('registerForm');
+  const emailGroup = document.getElementById('emailGroup');
+
+  function updateForRole() {
+    const role = roleEl.value;
+    if (role === 'admin') {
+      form.action = '/admin/register';
+      emailGroup.style.display = 'none';
+      document.getElementById('email').required = false;
+    } else {
+      form.action = '{{ url_for('register') }}';
+      emailGroup.style.display = '';
+      document.getElementById('email').required = true;
+    }
+  }
+  roleEl.addEventListener('change', updateForRole);
+  updateForRole();
+</script>
+{% endblock %}

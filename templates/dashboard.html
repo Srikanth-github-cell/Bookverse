@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BookVerse{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Welcome, <span class="neon-text">{{ user.username }}</span>!</h1>
+        <p>Your personal reading dashboard</p>
+    </div>
+
+    <section class="favorites-section">
+        <h2 class="section-title">My Favorites by Genre</h2>
+        {% if favorites_by_category %}
+            {% for category, books in favorites_by_category.items() %}
+            <div class="category-block">
+                <h3 class="category-title">{{ category }}</h3>
+                <div class="books-grid">
+                    {% for book in books %}
+                    <div class="book-card">
+                        <div class="book-cover">
+                            {% if book.cover_image %}
+                            <img src="{{ url_for('static', filename='uploads/' + book.cover_image) }}" alt="{{ book.title }}">
+                            {% else %}
+                            <div class="book-cover-placeholder">📖</div>
+                            {% endif %}
+                        </div>
+                        <div class="book-info">
+                            <h3 class="book-title">{{ book.title }}</h3>
+                            <p class="book-author">by {{ book.author }}</p>
+                            <a href="{{ url_for('book_detail', book_id=book.id) }}" class="btn-read">View Details</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="empty-message">No favorites yet. Start exploring books!</p>
+        {% endif %}
+    </section>
+
+    <section class="recent-section">
+        <h2 class="section-title">Recent Reading History</h2>
+        {% if recent_books %}
+            <div class="recent-grid">
+                {% for book in recent_books %}
+                <div class="recent-card">
+                    <div class="recent-cover">
+                        {% if book.cover_image %}
+                        <img src="{{ url_for('static', filename='uploads/' + book.cover_image) }}" alt="{{ book.title }}">
+                        {% else %}
+                        <div class="book-cover-placeholder">📖</div>
+                        {% endif %}
+                    </div>
+                    <div class="recent-info">
+                        <h3>{{ book.title }}</h3>
+                        <p>by {{ book.author }}</p>
+                        <p class="recent-page">Last page: {{ book.last_page }}</p>
+                        <a href="{{ url_for('read_book', book_id=book.id) }}" class="btn-continue">Continue Reading</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-message">No reading history yet. Start reading books!</p>
+        {% endif %}
+    </section>
+</div>
+
+{% endblock %}

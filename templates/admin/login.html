@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - BookVerse</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <h2 class="auth-title">Admin Login</h2>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" class="auth-form">
+                <div class="form-group">
+                    <label for="username">Admin Username</label>
+                    <input type="text" id="username" name="username" required class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Admin Password</label>
+                    <input type="password" id="password" name="password" required class="form-input">
+                </div>
+                
+                <button type="submit" class="btn-submit">Login as Admin</button>
+            </form>
+            
+            <!-- <p class="auth-switch"><a href="{{ url_for('admin_register') }}">Create an Admin</a></p> -->
+            <p class="auth-switch"><a href="{{ url_for('index') }}">Back to Home</a></p>
+        </div>
+    </div>
+</body>
+</html>

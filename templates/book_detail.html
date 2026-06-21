@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - BookVerse{% endblock %}
+
+{% block content %}
+<div class="book-detail-container">
+    <div class="book-detail-header">
+        <div class="book-detail-cover">
+            {% if book.cover_image %}
+            <img src="{{ url_for('static', filename='uploads/' + book.cover_image) }}" alt="{{ book.title }}">
+            {% else %}
+            <div class="book-cover-placeholder-large">📖</div>
+            {% endif %}
+        </div>
+        
+        <div class="book-detail-info">
+            <h1 class="book-detail-title">{{ book.title }}</h1>
+            <p class="book-detail-author">by {{ book.author }}</p>
+            <span class="book-detail-category">{{ book.category_name or 'Uncategorized' }}</span>
+            
+            <p class="book-description">{{ book.description or 'No description available.' }}</p>
+            
+            <div class="book-rating">
+                {% if avg_rating %}
+                <span class="rating-stars">★ {{ "%.1f"|format(avg_rating) }}</span>
+                <span class="rating-count">({{ rating_count }} reviews)</span>
+                {% else %}
+                <span class="rating-count">No ratings yet</span>
+                {% endif %}
+            </div>
+            
+            <div class="book-actions">
+                {% if book.pdf_file %}
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('read_book', book_id=book.id) }}" class="btn-primary btn-large">
+                    {% if last_page > 1 %}
+                        Continue Reading (Page {{ last_page }})
+                    {% else %}
+                        Start Reading
+                    {% endif %}
+                </a>
+                {% else %}
+                <a href="{{ url_for('login', next=url_for('read_book', book_id=book.id)) }}" class="btn-primary btn-large">
+                    Login to Start Reading
+                </a>
+                {% endif %}
+                {% endif %}
+                
+                {% if current_user.is_authenticated %}
+                <button onclick="toggleFavorite({{ book.id }})" id="favoriteBtn" class="btn-favorite {% if is_favorite %}active{% endif %}">
+                    {% if is_favorite %}♥ Remove from Favorites{% else %}♡ Add to Favorites{% endif %}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <section class="rating-section">
+        <h2 class="section-title">Rate This Book</h2>
+        <div class="rating-form">
+            <div class="star-rating">
+                <span class="star" data-rating="1">☆</span>
+                <span class="star" data-rating="2">☆</span>
+                <span class="star" data-rating="3">☆</span>
+                <span class="star" data-rating="4">☆</span>
+                <span class="star" data-rating="5">☆</span>
+            </div>
+            <textarea id="reviewText" placeholder="Write your review here (optional)..." class="review-textarea">{{ user_rating.review if user_rating else '' }}</textarea>
+            <button onclick="submitRating({{ book.id }})" class="btn-submit">Submit Rating</button>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="reviews-section">
+        <h2 class="section-title">Reviews</h2>
+        {% if reviews %}
+            <div class="reviews-list" id="reviewsList">
+                {% for review in reviews %}
+                <div class="review-card">
+                    <div class="review-header">
+                        <span class="review-author">{{ review.username }}</span>
+                        <span class="review-rating">{{ '★' * review.rating }}{{ '☆' * (5 - review.rating) }}</span>
+                    </div>
+                    {% if review.review %}
+                    <p class="review-text">{{ review.review }}</p>
+                    {% endif %}
+                    <p class="review-date">{{ review.created_at }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-message" id="noReviewsMsg">No reviews yet. Be the first to review!</p>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+let selectedRating = {{ user_rating.rating if user_rating else 0 }};
+
+document.querySelectorAll('.star').forEach(star => {
+    star.addEventListener('click', function() {
+        selectedRating = parseInt(this.dataset.rating);
+        updateStars();
+    });
+});
+
+function updateStars() {
+    document.querySelectorAll('.star').forEach(star => {
+        const rating = parseInt(star.dataset.rating);
+        star.textContent = rating <= selectedRating ? '★' : '☆';
+        star.classList.toggle('active', rating <= selectedRating);
+    });
+}
+
+updateStars();
+
+async function toggleFavorite(bookId) {
+    const response = await fetch('/api/toggle_favorite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ book_id: bookId })
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+        const btn = document.getElementById('favoriteBtn');
+        if (data.is_favorite) {
+            btn.textContent = '♥ Remove from Favorites';
+            btn.classList.add('active');
+        } else {
+            btn.textContent = '♡ Add to Favorites';
+            btn.classList.remove('active');
+        }
+    }
+}
+
+async function submitRating(bookId) {
+    if (selectedRating === 0) {
+        alert('Please select a rating!');
+        return;
+    }
+
+    const btn = document.querySelector('.btn-submit');
+    btn.disabled = true;
+
+    const review = document.getElementById('reviewText').value;
+
+    try {
+        const response = await fetch('/api/submit_rating', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                book_id: bookId, 
+                rating: selectedRating, 
+                review: review 
+            })
+        });
+        const data = await response.json();
+        alert(data.message || 'Submitted');
+        if (data.success) {
+            // Optimistically add the pending review to the list
+            const list = document.getElementById('reviewsList');
+            const emptyMsg = document.getElementById('noReviewsMsg');
+            if (emptyMsg) emptyMsg.remove();
+            if (list) {
+                const card = document.createElement('div');
+                card.className = 'review-card';
+                const stars = '★'.repeat(selectedRating) + '☆'.repeat(5 - selectedRating);
+                const username = "{{ current_user.username if current_user.is_authenticated else 'You' }}";
+                card.innerHTML = `
+                    <div class="review-header">
+                        <span class="review-author">${username} <span style="color:#ffff00; font-size:0.85rem;">(Pending)</span></span>
+                        <span class="review-rating">${stars}</span>
+                    </div>
+                    ${review ? `<p class="review-text"></p>` : ''}
+                    <p class="review-date">Just now</p>
+                `;
+                if (review) card.querySelector('.review-text').textContent = review;
+                list.prepend(card);
+            }
+            // Clear textarea
+            document.getElementById('reviewText').value = '';
+        }
+    } catch (e) {
+        alert('Failed to submit rating. Please try again.');
+    } finally {
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}
